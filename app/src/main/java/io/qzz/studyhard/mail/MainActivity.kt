@@ -19,7 +19,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,7 +43,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.random.Random
+import java.util.Random
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -405,7 +404,7 @@ fun HelloWorldScreen(
                                     horizontalArrangement = Arrangement.SpaceEvenly
                                 ) {
                                     WeatherInfoItem(
-                                        icon = Icons.Default.WaterDrop,
+                                        icon = Icons.Default.Water,
                                         value = "${weather.main.humidity}%",
                                         label = "湿度"
                                     )
@@ -435,13 +434,13 @@ fun HelloWorldScreen(
                                     val sunsetTime = sdf.format(Date(weather.sys.sunset * 1000))
                                     
                                     WeatherInfoItem(
-                                        icon = Icons.Default.WbSunny,
+                                        icon = Icons.Default.LightMode,
                                         value = sunriseTime,
                                         label = "日出"
                                     )
                                     
                                     WeatherInfoItem(
-                                        icon = Icons.Default.Nightlight,
+                                        icon = Icons.Default.DarkMode,
                                         value = sunsetTime,
                                         label = "日落"
                                     )
@@ -601,12 +600,11 @@ fun CloudDecoration(modifier: Modifier = Modifier) {
 
 // 粒子动画状态
 class ParticleState {
-    private val random = Random(System.currentTimeMillis())
+    private val random = Random()
     
-    // 使用明确的Random实例而不是扩展函数
-    var x by mutableStateOf(random.nextInt(0, 401).toFloat())
-    var y by mutableStateOf(random.nextInt(0, 801).toFloat())
-    var size by mutableStateOf(random.nextInt(2, 6).toFloat())
+    var x by mutableStateOf(random.nextInt(401).toFloat())
+    var y by mutableStateOf(random.nextInt(801).toFloat())
+    var size by mutableStateOf((random.nextInt(4) + 2).toFloat())
     var alpha by mutableStateOf(0.1f + random.nextFloat() * 0.2f)
 }
 
@@ -619,13 +617,13 @@ private fun isValidEmail(email: String): Boolean {
 
 fun getWeatherIcon(weatherCondition: String): ImageVector {
     return when (weatherCondition.lowercase()) {
-        "clear" -> Icons.Default.WbSunny
+        "clear" -> Icons.Default.LightMode
         "clouds", "cloudy" -> Icons.Default.Cloud
-        "rain", "drizzle" -> Icons.Default.Grain
-        "thunderstorm" -> Icons.Default.FlashOn
+        "rain", "drizzle" -> Icons.Default.Water
+        "thunderstorm" -> Icons.Default.ElectricBolt
         "snow" -> Icons.Default.AcUnit
         "mist", "fog", "haze" -> Icons.Default.Cloud
-        else -> Icons.Default.WbSunny
+        else -> Icons.Default.LightMode
     }
 }
 

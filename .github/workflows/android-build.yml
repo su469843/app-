@@ -33,8 +33,11 @@ jobs:
       - name: List project files
         run: ls -la
         
-      - name: Build with Gradle
-        run: ./gradlew assembleDebug --info
+      - name: Show full Kotlin compiler error
+        run: ./gradlew compileDebugKotlin --stacktrace --info --warning-mode all
+        
+      - name: Build with Gradle (Detailed Logs)
+        run: ./gradlew assembleDebug --stacktrace --info --warning-mode all
         
       - name: List APK directory
         run: find . -name "*.apk"
