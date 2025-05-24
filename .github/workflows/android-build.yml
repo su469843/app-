@@ -34,9 +34,23 @@ jobs:
       - name: List APK directory
         run: find . -name "*.apk"
         
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Rename APK
+        run: |
+          mkdir -p release
+          find app/build/outputs/apk/debug -name "*.apk" -exec cp {} release/hello-world-app.apk \;
+      
+      - name: Generate Release Timestamp
+        id: timestamp
+        run: echo "timestamp=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
+        
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
         with:
-          name: hello-world-app-debug
-          path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error  # 如果找不到APK文件则报错 
+          tag_name: v${{ steps.timestamp.outputs.timestamp }}
+          name: Hello World App Build ${{ steps.timestamp.outputs.timestamp }}
+          files: release/hello-world-app.apk
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
