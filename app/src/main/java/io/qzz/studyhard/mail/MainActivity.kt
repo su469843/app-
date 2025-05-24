@@ -44,6 +44,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -600,10 +601,13 @@ fun CloudDecoration(modifier: Modifier = Modifier) {
 
 // 粒子动画状态
 class ParticleState {
-    var x by mutableStateOf((0..400).random().toFloat())
-    var y by mutableStateOf((0..800).random().toFloat())
-    var size by mutableStateOf((2..5).random().toFloat())
-    var alpha by mutableStateOf((0.1f..0.3f).random())
+    private val random = Random(System.currentTimeMillis())
+    
+    // 使用明确的Random实例而不是扩展函数
+    var x by mutableStateOf(random.nextInt(0, 401).toFloat())
+    var y by mutableStateOf(random.nextInt(0, 801).toFloat())
+    var size by mutableStateOf(random.nextInt(2, 6).toFloat())
+    var alpha by mutableStateOf(0.1f + random.nextFloat() * 0.2f)
 }
 
 // 改进邮箱验证函数
