@@ -48,14 +48,21 @@ jobs:
         id: timestamp
         run: echo "timestamp=$(date +'%Y%m%d%H%M%S')" >> $GITHUB_OUTPUT
         
+      - name: Extract version from update file
+        id: version_info
+        run: |
+          VERSION=$(head -n 1 app/updat/updat.md)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          cat app/updat/updat.md > ./release_notes.md
+      
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: v${{ steps.timestamp.outputs.timestamp }}
-          name: Hello World App Build ${{ steps.timestamp.outputs.timestamp }}
+          tag_name: ${{ steps.version_info.outputs.version || format('v{0}', steps.timestamp.outputs.timestamp) }}
+          name: 天气预报应用 ${{ steps.version_info.outputs.version || format('Build {0}', steps.timestamp.outputs.timestamp) }}
+          body_path: ./release_notes.md
           files: release/hello-world-app.apk
           draft: false
           prerelease: false
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

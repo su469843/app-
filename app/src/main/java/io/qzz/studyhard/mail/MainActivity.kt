@@ -3,6 +3,8 @@ package io.qzz.studyhard.mail
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Patterns
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.*
@@ -33,6 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,11 +63,17 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun HelloWorldScreen(weatherViewModel: WeatherViewModel = viewModel()) {
+fun HelloWorldScreen(
+    weatherViewModel: WeatherViewModel = viewModel(),
+    emailViewModel: EmailViewModel = viewModel()
+) {
     val context = LocalContext.current
     var visible by remember { mutableStateOf(false) }
     val weatherUiState by weatherViewModel.uiState.collectAsState()
+    val emailUiState by emailViewModel.uiState.collectAsState()
     var cityName by remember { mutableStateOf("Beijing") }
+    var emailAddress by remember { mutableStateOf("") }
+    var showEmailDialog by remember { mutableStateOf(false) }
     val keyboardController = LocalSoftwareKeyboardController.current
     
     // 创建渐变背景
@@ -82,6 +91,35 @@ fun HelloWorldScreen(weatherViewModel: WeatherViewModel = viewModel()) {
         delay(300)
         visible = true
         weatherViewModel.fetchWeather(cityName)
+    }
+    
+    // 处理邮件发送后的提示
+    LaunchedEffect(emailUiState) {
+        when (emailUiState) {
+            is EmailUiState.Success -> {
+                // 显示成功消息
+                Toast.makeText(
+                    context,
+                    (emailUiState as EmailUiState.Success).message,
+                    Toast.LENGTH_LONG
+                ).show()
+                // 重置状态
+                delay(3000)
+                emailViewModel.resetState()
+            }
+            is EmailUiState.Error -> {
+                // 显示错误消息
+                Toast.makeText(
+                    context,
+                    (emailUiState as EmailUiState.Error).message,
+                    Toast.LENGTH_LONG
+                ).show()
+                // 重置状态
+                delay(3000)
+                emailViewModel.resetState()
+            }
+            else -> { /* 不处理其他状态 */ }
+        }
     }
     
     Box(
@@ -128,6 +166,84 @@ fun HelloWorldScreen(weatherViewModel: WeatherViewModel = viewModel()) {
                     .size(70.dp)
                     .offset(50.dp, 300.dp)
                     .blur(radius = 4.dp)
+            )
+        }
+        
+        // 电子邮件输入对话框
+        if (showEmailDialog) {
+            val currentWeather = (weatherUiState as? WeatherUiState.Success)?.data
+            
+            AlertDialog(
+                onDismissRequest = { showEmailDialog = false },
+                title = { Text("发送天气信息") },
+                text = {
+                    Column {
+                        Text("将当前天气信息发送到您的邮箱")
+                        Spacer(modifier = Modifier.height(16.dp))
+                        OutlinedTextField(
+                            value = emailAddress,
+                            onValueChange = { emailAddress = it },
+                            label = { Text("邮箱地址") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                imeAction = ImeAction.Done,
+                                keyboardType = KeyboardType.Email
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = { keyboardController?.hide() }
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (emailAddress.isNotBlank()) {
+                                if (isValidEmail(emailAddress)) {
+                                    currentWeather?.let {
+                                        emailViewModel.sendWeatherEmail(emailAddress, it)
+                                        showEmailDialog = false
+                                    } ?: run {
+                                        Toast.makeText(
+                                            context,
+                                            "无法获取天气信息",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "请输入有效的邮箱地址",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "请输入邮箱地址",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        },
+                        enabled = emailUiState !is EmailUiState.Sending
+                    ) {
+                        if (emailUiState is EmailUiState.Sending) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp,
+                                color = Color.White
+                            )
+                        } else {
+                            Text("发送")
+                        }
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showEmailDialog = false }) {
+                        Text("取消")
+                    }
+                }
             )
         }
         
@@ -329,6 +445,31 @@ fun HelloWorldScreen(weatherViewModel: WeatherViewModel = viewModel()) {
                                         label = "日落"
                                     )
                                 }
+                                
+                                // 添加在 Success 状态时显示分享按钮
+                                // 在日出日落信息下方添加
+                                Spacer(modifier = Modifier.height(24.dp))
+                                
+                                Button(
+                                    onClick = { showEmailDialog = true },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF1A237E)
+                                    )
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Email,
+                                            contentDescription = "发送邮件",
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("发送天气信息到邮箱")
+                                    }
+                                }
                             }
                             is WeatherUiState.Error -> {
                                 Icon(
@@ -463,6 +604,13 @@ class ParticleState {
     var y by mutableStateOf((0..800).random().toFloat())
     var size by mutableStateOf((2..5).random().toFloat())
     var alpha by mutableStateOf((0.1f..0.3f).random())
+}
+
+// 改进邮箱验证函数
+private fun isValidEmail(email: String): Boolean {
+    if (email.isBlank()) return false
+    val pattern = Patterns.EMAIL_ADDRESS
+    return pattern.matcher(email).matches()
 }
 
 fun getWeatherIcon(weatherCondition: String): ImageVector {
