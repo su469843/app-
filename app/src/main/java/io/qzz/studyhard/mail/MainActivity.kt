@@ -599,7 +599,7 @@ fun CloudDecoration(modifier: Modifier = Modifier) {
 
 // 粒子动画状态
 class ParticleState {
-    private val random = java.util.Random()
+    private val random = kotlin.random.Random
     
     var x by mutableStateOf(random.nextInt(401).toFloat())
     var y by mutableStateOf(random.nextInt(801).toFloat())

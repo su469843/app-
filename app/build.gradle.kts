@@ -82,7 +82,7 @@ dependencies {
     implementation(composeBom)
     
     implementation("androidx.multidex:multidex:2.0.1")
-    
+
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation("androidx.core:core-ktx:1.12.0")
