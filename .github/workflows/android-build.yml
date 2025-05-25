@@ -42,6 +42,23 @@ jobs:
             echo "# 天气预报应用" >> app/updat/updat.md
             echo "首次发布" >> app/updat/updat.md
           fi
+          
+      - name: Clean up conflicting icon resources
+        run: |
+          echo "Checking for conflicting icon resources..."
+          # Remove .webp files if both .webp and .png exist
+          for DIR in app/src/main/res/mipmap-*; do
+            if [ -d "$DIR" ]; then
+              echo "Checking directory: $DIR"
+              for BASE in ic_launcher ic_launcher_round; do
+                if [ -f "$DIR/$BASE.webp" ] && [ -f "$DIR/$BASE.png" ]; then
+                  echo "Found conflict: $DIR/$BASE.webp and $DIR/$BASE.png"
+                  echo "Removing: $DIR/$BASE.webp"
+                  rm "$DIR/$BASE.webp"
+                fi
+              done
+            fi
+          done
         
       - name: Show Gradle properties
         run: cat gradle.properties || echo "gradle.properties not found"

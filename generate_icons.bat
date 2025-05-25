@@ -29,6 +29,8 @@ if "%choice%"=="1" (
   echo 7. Click "Next" and "Finish" to generate all icons
   echo.
   echo After completing these steps, all necessary icon files will be generated
+  echo.
+  echo NOTE: After generating icons, run clean_icons.bat to resolve any conflicts
 ) else if "%choice%"=="2" (
   echo.
   echo Copying placeholder icon files...
@@ -54,6 +56,10 @@ if "%choice%"=="1" (
   echo Invalid option, please run the script again and select 1 or 2
   goto :error
 )
+
+echo.
+echo Cleaning up any conflicting icon files...
+call clean_icons.bat
 
 echo.
 echo ===== Operation Complete! =====
