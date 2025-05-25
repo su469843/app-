@@ -16,8 +16,6 @@ jobs:
   build:
     name: Build APK
     runs-on: ubuntu-latest
-    env:
-      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs='-Xmx4g -XX:MaxPermSize=2048m -XX:+HeapDumpOnOutOfMemoryError'"
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -34,18 +32,29 @@ jobs:
         
       - name: List project files
         run: ls -la
-      
-      - name: Clean Gradle Cache
-        run: ./gradlew clean --no-daemon
-
-      - name: Show JVM settings
-        run: java -XshowSettings:vm -version
         
-      - name: Show full Kotlin compiler error
-        run: ./gradlew compileDebugKotlin --stacktrace --info --warning-mode all --no-daemon
+      - name: Show Gradle properties
+        run: cat gradle.properties || echo "gradle.properties not found"
         
-      - name: Build with Gradle (Detailed Logs)
-        run: ./gradlew assembleDebug --stacktrace --info --warning-mode all --no-daemon
+      - name: Print environment info
+        run: |
+          echo "Memory info:"
+          free -h
+          echo "Disk space:"
+          df -h
+          
+      - name: Add memory config for Gradle
+        run: |
+          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError" >> gradle.properties
+          echo "org.gradle.parallel=true" >> gradle.properties
+          echo "org.gradle.caching=true" >> gradle.properties
+          echo "kotlin.incremental=false" >> gradle.properties
+        
+      - name: Show Kotlin compiler errors (with extra debug)
+        run: ./gradlew compileDebugKotlin --stacktrace --debug --scan
+        
+      - name: Build with Gradle (Clean first)
+        run: ./gradlew clean assembleDebug --stacktrace --info --warning-mode all --no-daemon
         
       - name: List APK directory
         run: find . -name "*.apk"

@@ -600,19 +600,12 @@ fun CloudDecoration(modifier: Modifier = Modifier) {
 
 // 粒子动画状态
 class ParticleState {
-    // 使用简单值初始化，避免随机数相关问题
-    var x by mutableStateOf(100f)
-    var y by mutableStateOf(200f)
-    var size by mutableStateOf(4f)
-    var alpha by mutableStateOf(0.2f)
+    private val random = java.util.Random()
     
-    init {
-        // 延迟初始化随机值，避免构建时的问题
-        x = (Math.random() * 400).toFloat()
-        y = (Math.random() * 800).toFloat()
-        size = (Math.random() * 4 + 2).toFloat()
-        alpha = (Math.random() * 0.2 + 0.1).toFloat()
-    }
+    var x by mutableStateOf(random.nextInt(401).toFloat())
+    var y by mutableStateOf(random.nextInt(801).toFloat())
+    var size by mutableStateOf((random.nextInt(4) + 2).toFloat())
+    var alpha by mutableStateOf(0.1f + random.nextFloat() * 0.2f)
 }
 
 // 改进邮箱验证函数

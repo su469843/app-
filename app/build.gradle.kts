@@ -39,7 +39,7 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.4.6"
+        kotlinCompilerExtensionVersion = "1.5.1"
     }
     packaging {
         resources {
@@ -47,8 +47,6 @@ android {
             excludes += "META-INF/LICENSE.md"
             excludes += "META-INF/LICENSE-notice.md"
             excludes += "META-INF/DEPENDENCIES"
-            excludes += "**/attach_hotspot_windows.dll"
-            excludes += "META-INF/versions/**"
         }
     }
     kotlin {
@@ -57,22 +55,24 @@ android {
 }
 
 dependencies {
-    // Multidex支持
+    val composeBom = platform("androidx.compose:compose-bom:2023.10.01")
+    implementation(composeBom)
+    
     implementation("androidx.multidex:multidex:2.0.1")
     
-    // Android基础库
+    implementation(libs.appcompat)
+    implementation(libs.material)
     implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.11.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
     implementation("androidx.activity:activity-compose:1.8.2")
     
-    // Compose基础库 - 使用BOM
-    val composeBomVersion = "2023.10.01"
-    implementation(platform("androidx.compose:compose-bom:$composeBomVersion"))
+    // Compose UI
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
+    
+    // 图标库 - 使用core而不是extended以减少DEX数量
     implementation("androidx.compose.material:material-icons-core")
     
     // 网络请求
@@ -81,14 +81,12 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
     
-    // 协程支持
+    // 协程
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
     
-    // 测试库
-    testImplementation("junit:junit:4.13.2")
-    
-    // Debug工具 - 仅debug构建使用
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.ext.junit)
+    androidTestImplementation(libs.espresso.core)
     debugImplementation("androidx.compose.ui:ui-tooling")
-    implementation("androidx.compose.ui:ui-tooling-preview")
 }
