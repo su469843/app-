@@ -1,0 +1,21 @@
+{
+  "name": "weather-app",
+  "version": "1.0.1",
+  "description": "天气预报应用",
+  "main": "index.js",
+  "scripts": {
+    "start": "echo \"使用Android Studio运行项目\" && exit 1",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/weather-app.git"
+  },
+  "keywords": [
+    "weather",
+    "android",
+    "app"
+  ],
+  "author": "",
+  "license": "MIT"
+} 
