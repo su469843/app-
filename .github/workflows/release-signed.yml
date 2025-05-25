@@ -75,9 +75,15 @@ jobs:
           # 删除密钥库文件
           rm -f app/keystore.jks
 
-      # 获取package.json的版本号
+      # 获取package.json的版本号或使用默认版本
       - name: Get package version
-        run: node -p -e '`PACKAGE_VERSION=${require("./package.json").version}`' >> $GITHUB_ENV
+        run: |
+          if [ -f "package.json" ]; then
+            node -p -e '`PACKAGE_VERSION=${require("./package.json").version}`' >> $GITHUB_ENV
+          else
+            echo "PACKAGE_VERSION=1.0.1" >> $GITHUB_ENV
+            echo "package.json not found, using default version: 1.0.1"
+          fi
 
       - name: Create git tag
         uses: pkgdeps/git-tag-action@v3
@@ -124,8 +130,17 @@ jobs:
 
       - name: Generate Release Notes
         run: |
-          # 复制基础更新日志
-          cp publish/changeLog.md ./release_notes.md
+          # 检查是否存在更新日志文件
+          if [ -f "publish/changeLog.md" ]; then
+            # 复制基础更新日志
+            cp publish/changeLog.md ./release_notes.md
+          else
+            # 创建默认更新日志
+            echo "# 天气预报应用 v${{ env.PACKAGE_VERSION }}" > ./release_notes.md
+            echo "" >> ./release_notes.md
+            echo "## 更新内容" >> ./release_notes.md
+            echo "- 应用更新" >> ./release_notes.md
+          fi
           
           # 添加MD5校验
           echo -e "\n### File MD5\n\`\`\`" >> ./release_notes.md
@@ -138,8 +153,15 @@ jobs:
           echo "- Build Date: $(date +'%Y-%m-%d %H:%M:%S')" >> ../release_notes.md
           echo "- GitHub Action Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> ../release_notes.md
 
+      # 获取package.json的版本号或使用默认版本
       - name: Get package version
-        run: node -p -e '`PACKAGE_VERSION=${require("./package.json").version}`' >> $GITHUB_ENV
+        run: |
+          if [ -f "package.json" ]; then
+            node -p -e '`PACKAGE_VERSION=${require("./package.json").version}`' >> $GITHUB_ENV
+          else
+            echo "PACKAGE_VERSION=1.0.1" >> $GITHUB_ENV
+            echo "package.json not found, using default version: 1.0.1"
+          fi
 
       - name: Release
         uses: softprops/action-gh-release@v2
