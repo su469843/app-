@@ -29,6 +29,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            proguardFile("proguard-rules.pro")
+        }
+        debug {
+            isMinifyEnabled = false
         }
     }
     compileOptions {
@@ -47,25 +51,30 @@ android {
             excludes += "META-INF/LICENSE.md"
             excludes += "META-INF/LICENSE-notice.md"
             excludes += "META-INF/DEPENDENCIES"
+            excludes += "DebugProbesKt.bin"
+            excludes += "META-INF/*.kotlin_module"
         }
     }
     kotlin {
         jvmToolchain(17)
     }
     
-    // 添加更多内存给Kotlin编译器
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
         kotlinOptions {
             jvmTarget = "17"
-            freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
+            freeCompilerArgs += listOf(
+                "-Xopt-in=kotlin.RequiresOptIn",
+                "-Xskip-prerelease-check",
+                "-Xjvm-default=all"
+            )
+            allWarningsAsErrors = false
         }
     }
 }
 
-// 全局配置加速构建
 tasks.withType<JavaCompile>().configureEach {
     options.isFork = true
-    options.isIncremental = false
+    options.isIncremental = true
 }
 
 dependencies {
@@ -80,22 +89,18 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
     implementation("androidx.activity:activity-compose:1.8.2")
     
-    // Compose UI
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     
-    // 图标库 - 使用core而不是extended以减少DEX数量
     implementation("androidx.compose.material:material-icons-core")
     
-    // 网络请求
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:okhttp:4.11.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
     
-    // 协程
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
     
