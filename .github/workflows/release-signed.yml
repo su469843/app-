@@ -1,0 +1,158 @@
+name: Signed Release Build
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:  # 允许手动触发工作流
+
+jobs:
+  Android:
+    name: Android Signed Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out git repository
+        uses: actions/checkout@v4
+
+      - name: Setup Env
+        uses: ./.github/actions/setup
+
+      - name: Clean up conflicting icon resources
+        run: |
+          echo "Checking for conflicting icon resources..."
+          # Remove .webp files if both .webp and .png exist
+          for DIR in app/src/main/res/mipmap-*; do
+            if [ -d "$DIR" ]; then
+              echo "Checking directory: $DIR"
+              for BASE in ic_launcher ic_launcher_round; do
+                if [ -f "$DIR/$BASE.webp" ] && [ -f "$DIR/$BASE.png" ]; then
+                  echo "Found conflict: $DIR/$BASE.webp and $DIR/$BASE.png"
+                  echo "Removing: $DIR/$BASE.webp"
+                  rm "$DIR/$BASE.webp"
+                fi
+              done
+            fi
+          done
+
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore.jks
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: Build Signed APK
+        shell: bash
+        run: |
+          # 配置Gradle属性
+          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError" > gradle.properties
+          echo "org.gradle.parallel=true" >> gradle.properties
+          echo "org.gradle.caching=true" >> gradle.properties
+          echo "org.gradle.daemon=false" >> gradle.properties
+          echo "android.useAndroidX=true" >> gradle.properties
+          echo "android.enableJetifier=false" >> gradle.properties
+          echo "kotlin.incremental=false" >> gradle.properties
+          echo "android.nonTransitiveRClass=true" >> gradle.properties
+          echo "kotlin.code.style=official" >> gradle.properties
+          echo "android.enableR8.fullMode=false" >> gradle.properties
+          
+          # 检查updat.md文件
+          mkdir -p app/updat
+          if [ ! -f app/updat/updat.md ]; then
+            echo "v1.0.1" > app/updat/updat.md
+            echo "# 天气预报应用" >> app/updat/updat.md
+            echo "首次发布" >> app/updat/updat.md
+          fi
+          
+          # 构建APK并签名
+          chmod +x gradlew
+          ./gradlew clean assembleRelease \
+            -Pandroid.injected.signing.store.file=keystore.jks \
+            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.KEYSTORE_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }} \
+            --stacktrace --info --warning-mode all --no-daemon
+          
+          # 删除密钥库文件
+          rm -f app/keystore.jks
+
+      # 获取package.json的版本号
+      - name: Get package version
+        run: node -p -e '`PACKAGE_VERSION=${require("./package.json").version}`' >> $GITHUB_ENV
+
+      - name: Create git tag
+        uses: pkgdeps/git-tag-action@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_repo: ${{ github.repository }}
+          version: ${{ env.PACKAGE_VERSION }}
+          git_commit_sha: ${{ github.sha }}
+          git_tag_prefix: "v"
+
+      - name: Generate file MD5
+        id: md5
+        run: |
+          echo "Generating MD5 for APK files..."
+          cd app/build/outputs/apk/release
+          
+          echo "MD5 checksums:" > md5_checksums.txt
+          md5sum *.apk >> md5_checksums.txt
+          cat md5_checksums.txt
+          
+          # 存储MD5到环境变量
+          echo "APK_MD5<<EOF" >> $GITHUB_ENV
+          cat md5_checksums.txt >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Upload Artifact
+        uses: ./.github/actions/upload-artifact
+        env:
+          PACKAGE_VERSION: ${{ env.PACKAGE_VERSION }}
+
+  Release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    needs: [Android]
+    steps:
+      - name: Check out git repository
+        uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+          merge-multiple: true
+
+      - name: Generate Release Notes
+        run: |
+          # 复制基础更新日志
+          cp publish/changeLog.md ./release_notes.md
+          
+          # 添加MD5校验
+          echo -e "\n### File MD5\n\`\`\`" >> ./release_notes.md
+          cd artifacts
+          md5sum *.apk >> ../release_notes.md
+          echo -e "\`\`\`\n" >> ../release_notes.md
+          
+          # 添加构建信息
+          echo -e "\n### Build Info" >> ../release_notes.md
+          echo "- Build Date: $(date +'%Y-%m-%d %H:%M:%S')" >> ../release_notes.md
+          echo "- GitHub Action Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> ../release_notes.md
+
+      - name: Get package version
+        run: node -p -e '`PACKAGE_VERSION=${require("./package.json").version}`' >> $GITHUB_ENV
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: ./release_notes.md
+          prerelease: false
+          draft: false
+          tag_name: v${{ env.PACKAGE_VERSION }}
+          files: |
+            artifacts/weather-app-v${{ env.PACKAGE_VERSION }}-arm64-v8a.apk
+            artifacts/weather-app-v${{ env.PACKAGE_VERSION }}-armeabi-v7a.apk
+            artifacts/weather-app-v${{ env.PACKAGE_VERSION }}-x86_64.apk
+            artifacts/weather-app-v${{ env.PACKAGE_VERSION }}-x86.apk
+            artifacts/weather-app-v${{ env.PACKAGE_VERSION }}-universal.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

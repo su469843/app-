@@ -12,26 +12,30 @@ runs:
         echo "Package version: $VERSION"
         
         # 复制并重命名APK文件
-        if [ -d "android/app/build/outputs/apk/release" ]; then
-          cd android/app/build/outputs/apk/release
+        if [ -d "app/build/outputs/apk/release" ]; then
+          cd app/build/outputs/apk/release
           
           # 处理APK文件
           for apk in *.apk; do
             if [[ "$apk" == *"arm64-v8a"* ]]; then
-              cp "$apk" "../../../../../artifacts/weather-app-v${VERSION}-arm64-v8a.apk"
+              cp "$apk" "../../../../artifacts/weather-app-v${VERSION}-arm64-v8a.apk"
             elif [[ "$apk" == *"armeabi-v7a"* ]]; then
-              cp "$apk" "../../../../../artifacts/weather-app-v${VERSION}-armeabi-v7a.apk"
+              cp "$apk" "../../../../artifacts/weather-app-v${VERSION}-armeabi-v7a.apk"
             elif [[ "$apk" == *"x86_64"* ]]; then
-              cp "$apk" "../../../../../artifacts/weather-app-v${VERSION}-x86_64.apk"
+              cp "$apk" "../../../../artifacts/weather-app-v${VERSION}-x86_64.apk"
             elif [[ "$apk" == *"x86"* ]]; then
-              cp "$apk" "../../../../../artifacts/weather-app-v${VERSION}-x86.apk"
+              cp "$apk" "../../../../artifacts/weather-app-v${VERSION}-x86.apk"
             else
-              cp "$apk" "../../../../../artifacts/weather-app-v${VERSION}-universal.apk"
+              cp "$apk" "../../../../artifacts/weather-app-v${VERSION}-universal.apk"
             fi
           done
         else
-          echo "APK output directory not found"
-          exit 1
+          echo "APK output directory not found in app/build/outputs/apk/release"
+          # 尝试搜索其他位置
+          find . -name "*.apk" | while read apk; do
+            echo "Found APK at: $apk"
+            cp "$apk" "../../../../artifacts/weather-app-v${VERSION}-universal.apk"
+          done
         fi
 
     - name: Upload artifacts
