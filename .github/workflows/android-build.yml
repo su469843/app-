@@ -43,12 +43,27 @@ jobs:
           echo "Disk space:"
           df -h
           
-      - name: Add memory config for Gradle
+      - name: Backup original gradle.properties
+        run: cp gradle.properties gradle.properties.bak || echo "No gradle.properties to backup"
+          
+      - name: Configure Gradle properties
         run: |
-          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError" >> gradle.properties
-          echo "org.gradle.parallel=true" >> gradle.properties
-          echo "org.gradle.caching=true" >> gradle.properties
-          echo "kotlin.incremental=false" >> gradle.properties
+          # Create new file instead of appending to existing one
+          echo "# Project-wide Gradle settings" > gradle.properties.new
+          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError" >> gradle.properties.new
+          echo "org.gradle.parallel=true" >> gradle.properties.new
+          echo "org.gradle.caching=true" >> gradle.properties.new
+          echo "org.gradle.daemon=false" >> gradle.properties.new
+          echo "android.useAndroidX=true" >> gradle.properties.new
+          echo "android.enableJetifier=false" >> gradle.properties.new
+          echo "kotlin.incremental=false" >> gradle.properties.new
+          echo "android.nonTransitiveRClass=true" >> gradle.properties.new
+          echo "kotlin.code.style=official" >> gradle.properties.new
+          echo "android.enableR8.fullMode=false" >> gradle.properties.new
+          mv gradle.properties.new gradle.properties
+        
+      - name: Validate Gradle properties
+        run: cat gradle.properties
         
       - name: Show Kotlin compiler errors (with extra debug)
         run: ./gradlew compileDebugKotlin --stacktrace --debug --scan
