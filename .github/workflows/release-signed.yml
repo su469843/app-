@@ -34,17 +34,66 @@ jobs:
             fi
           done
 
-      - name: Decode Keystore
+      - name: Debug Keystore Variable
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore.jks
+          # 检查secret是否设置
+          if [ -z "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "Error: KEYSTORE_BASE64 secret is not set or empty"
+            exit 1
+          fi
+          
+          # 输出前几个字符以验证格式(不泄露整个内容)
+          echo "First 10 characters of KEYSTORE_BASE64: ${KEYSTORE_BASE64:0:10}..."
+          
+          # 检查长度
+          echo "Length of KEYSTORE_BASE64: ${#KEYSTORE_BASE64}"
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: Decode Keystore
+        run: |
+          # 创建临时文件
+          echo "${{ secrets.KEYSTORE_BASE64 }}" > keystore_base64.txt
+          
+          # 检查文件是否有效
+          cat keystore_base64.txt | head -c 20
+          echo "..."
+          
+          # 尝试解码
+          cat keystore_base64.txt | base64 --decode > app/keystore.jks || {
+            echo "Failed to decode keystore"
+            echo "Checking file format..."
+            file keystore_base64.txt
+            exit 1
+          }
+          
+          # 验证生成的文件
+          if [ -f app/keystore.jks ]; then
+            echo "Keystore file created successfully"
+            ls -la app/keystore.jks
+          else
+            echo "Keystore file was not created"
+            exit 1
+          fi
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: Show system resources
+        run: |
+          echo "=== Memory Information ==="
+          free -h
+          
+          echo "=== Disk Space ==="
+          df -h
+          
+          echo "=== Java Version ==="
+          java -version
 
       - name: Build Signed APK
         shell: bash
         run: |
-          # 配置Gradle属性
-          echo "org.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g -XX:+HeapDumpOnOutOfMemoryError" > gradle.properties
+          # 配置Gradle属性，增加内存
+          echo "org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=2g -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8" > gradle.properties
           echo "org.gradle.parallel=true" >> gradle.properties
           echo "org.gradle.caching=true" >> gradle.properties
           echo "org.gradle.daemon=false" >> gradle.properties
@@ -63,14 +112,19 @@ jobs:
             echo "首次发布" >> app/updat/updat.md
           fi
           
-          # 构建APK并签名
+          # 尝试不带签名先构建，检查是否有其他问题
+          echo "=== 尝试构建不带签名的调试版本 ==="
           chmod +x gradlew
-          ./gradlew clean assembleRelease \
+          ./gradlew clean assembleDebug --stacktrace --debug
+
+          # 构建并签名release版本
+          echo "=== 构建签名版本 ==="
+          ./gradlew assembleRelease \
             -Pandroid.injected.signing.store.file=keystore.jks \
             -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
             -Pandroid.injected.signing.key.alias=${{ secrets.KEYSTORE_ALIAS }} \
             -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }} \
-            --stacktrace --info --warning-mode all --no-daemon
+            --stacktrace --debug --no-daemon --max-workers=2
           
           # 删除密钥库文件
           rm -f app/keystore.jks
@@ -149,8 +203,8 @@ jobs:
           echo -e "\`\`\`\n" >> ../release_notes.md
           
           # 添加构建信息
-          echo -e "\n### Build Info" >> ../release_notes.md
-          echo "- Build Date: $(date +'%Y-%m-%d %H:%M:%S')" >> ../release_notes.md
+          echo -e "\n### Build Info" >> ./release_notes.md
+          echo "- Build Date: $(date +'%Y-%m-%d %H:%M:%S')" >> ./release_notes.md
           echo "- GitHub Action Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" >> ../release_notes.md
 
       # 获取package.json的版本号或使用默认版本
