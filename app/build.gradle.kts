@@ -52,6 +52,20 @@ android {
     kotlin {
         jvmToolchain(17)
     }
+    
+    // 添加更多内存给Kotlin编译器
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        kotlinOptions {
+            jvmTarget = "17"
+            freeCompilerArgs += listOf("-Xopt-in=kotlin.RequiresOptIn")
+        }
+    }
+}
+
+// 全局配置加速构建
+tasks.withType<JavaCompile>().configureEach {
+    options.isFork = true
+    options.isIncremental = false
 }
 
 dependencies {

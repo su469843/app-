@@ -33,6 +33,16 @@ jobs:
       - name: List project files
         run: ls -la
         
+      - name: Check for updat.md file
+        run: |
+          mkdir -p app/updat
+          if [ ! -f app/updat/updat.md ]; then
+            echo "Warning: updat.md file is missing, creating default one."
+            echo "v1.0.0" > app/updat/updat.md
+            echo "# 天气预报应用" >> app/updat/updat.md
+            echo "首次发布" >> app/updat/updat.md
+          fi
+        
       - name: Show Gradle properties
         run: cat gradle.properties || echo "gradle.properties not found"
         
@@ -42,6 +52,8 @@ jobs:
           free -h
           echo "Disk space:"
           df -h
+          echo "Java version:"
+          java -version
           
       - name: Backup original gradle.properties
         run: cp gradle.properties gradle.properties.bak || echo "No gradle.properties to backup"
@@ -65,11 +77,24 @@ jobs:
       - name: Validate Gradle properties
         run: cat gradle.properties
         
-      - name: Show Kotlin compiler errors (with extra debug)
-        run: ./gradlew compileDebugKotlin --stacktrace --debug --scan
+      - name: Debug Kotlin Errors
+        run: ./gradlew compileDebugKotlin --stacktrace --debug --scan || echo "Kotlin compilation failed, proceeding with more detailed error checking."
+        
+      - name: Check for file compilation errors
+        if: ${{ failure() }}
+        run: |
+          echo "Looking for specific compilation errors..."
+          ./gradlew compileDebugKotlin --stacktrace --info > compilation_errors.log
+          cat compilation_errors.log
+          if grep -q "Random" compilation_errors.log; then
+            echo "Possible issue with Random implementation found."
+          fi
+          if grep -q "Unresolved reference" compilation_errors.log; then
+            echo "Unresolved reference found in code."
+          fi
         
       - name: Build with Gradle (Clean first)
-        run: ./gradlew clean assembleDebug --stacktrace --info --warning-mode all --no-daemon
+        run: ./gradlew clean assembleDebug --stacktrace --info --warning-mode all --no-daemon --refresh-dependencies
         
       - name: List APK directory
         run: find . -name "*.apk"
