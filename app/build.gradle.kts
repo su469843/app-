@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     id("org.jetbrains.kotlin.android")
+    id("kotlin-kapt")
 }
 
 android {
@@ -85,15 +86,23 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    
-    // 图标库 - 使用core而不是extended以减少DEX数量
     implementation("androidx.compose.material:material-icons-core")
     
-    // 网络请求
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation("com.squareup.okhttp3:okhttp:4.11.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
+    // Markdown 处理
+    implementation("com.github.noties.markwon:core:4.6.2")
+    implementation("com.github.noties.markwon:html:4.6.2")
+    implementation("com.github.noties.markwon:image:4.6.2")
+    implementation("com.github.noties.markwon:syntax-highlight:4.6.2")
+    
+    // PDF 导出
+    implementation("com.itextpdf:itext7-core:7.2.5")
+    
+    // HTML 转换
+    implementation("org.commonmark:commonmark:0.21.0")
+    implementation("org.commonmark:commonmark-ext-gfm-tables:0.21.0")
+    
+    // 文件操作
+    implementation("androidx.documentfile:documentfile:1.0.1")
     
     // 协程
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")

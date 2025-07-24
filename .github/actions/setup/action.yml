@@ -21,7 +21,7 @@ runs:
       run: |
         if [ ! -f "package-lock.json" ]; then
           echo "Creating minimal package-lock.json for workflow"
-          echo '{"name":"weather-app","lockfileVersion":2,"requires":true,"packages":{}}' > package-lock.json
+          echo '{"name":"markdown","lockfileVersion":2,"requires":true,"packages":{}}' > package-lock.json
         fi
         
     - name: Cache Gradle packages
