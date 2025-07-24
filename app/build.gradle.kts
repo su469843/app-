@@ -89,10 +89,10 @@ dependencies {
     implementation("androidx.compose.material:material-icons-core")
     
     // Markdown 处理
-    implementation("com.github.noties.markwon:core:4.6.2")
-    implementation("com.github.noties.markwon:html:4.6.2")
-    implementation("com.github.noties.markwon:image:4.6.2")
-    implementation("com.github.noties.markwon:syntax-highlight:4.6.2")
+    implementation("com.github.noties:Markwon:4.6.2")  // 核心库
+    implementation("com.github.noties.Markwon:html:4.6.2")
+    implementation("com.github.noties.Markwon:image:4.6.2")
+    implementation("com.github.noties.Markwon:syntax-highlight:4.6.2")
     
     // PDF 导出
     implementation("com.itextpdf:itext7-core:7.2.5")
